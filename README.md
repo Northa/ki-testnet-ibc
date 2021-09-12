@@ -21,7 +21,7 @@ rly config init
 ```
 #### 3. Once initialized lets configure it:
 ```
-cd && mkdir relayer && cd relayer
+cd && mkdir relayer_config && cd relayer_config
 ```
 Create config for the kichain-t-4 network
 ```
@@ -56,22 +56,22 @@ nano cro_config.json
 
 ```rly chains add -f cro_config.```
 #### 5. Well now we have to generate or import wallets.
-- _Notice in my case im using key name ki_test and cro_test.
+- _Notice in my case im using key name kichain_key and cro_key.
 You can specify watever you want name._
 
 ###### Generating new keys
-```rly keys add kichain-t-4 ki_test```
+```rly keys add kichain-t-4 kichain_key```
 
-```rly keys add testnet-croeseid-4 --coin-type 1 cro_test```
+```rly keys add testnet-croeseid-4 --coin-type 1 cro_key```
 	
 #### WARNING! 
 - We using coin type 1 when generating croeseid wallet
   because croesseid using DIFFERENT hd path!
 
 ###### Import existing keys
-```rly keys restore kichain-t-4 ki_test "YOUR MNEMONIC"```
+```rly keys restore kichain-t-4 kichain_key "MNEMONIC"```
 
-```rly keys restore "testnet-croeseid-4" cro_test --coin-type 1 "YOUR MNEMONIC"```
+```rly keys restore "testnet-croeseid-4" cro_key --coin-type 1 "MNEMONIC"```
 
 
 
@@ -80,18 +80,18 @@ You can specify watever you want name._
 ```sh
 rly keys list kichain-t-4
 
-key(0): ki_test -> tki1__YOUR_WALLET
+key(0): kichain_key -> tki1__YOUR_WALLET
 ```
 ```sh
 rly keys list testnet-croeseid-4
 
-key(0): cro_test -> tcro__YOUR_WALLET
+key(0): cro_key -> tcro__YOUR_WALLET
 ```
 #### 7. Add the newly created keys to the config of the relayer:
 
-```rly chains edit kichain-t-4 key ki_test```
+```rly chains edit kichain-t-4 key kichain_key```
 
-```rly chains edit testnet-croeseid-4 key cro_test```
+```rly chains edit testnet-croeseid-4 key cro_key```
 
 #### 8. Change timeout in the relayer settings
 
@@ -99,56 +99,38 @@ key(0): cro_test -> tcro__YOUR_WALLET
 
 Find the line ```timeout: 10s``` and replace to ```timeout: 10m```
 
-#### 9. Check the wallet balance of the relayer. 
-Note both wallets should have some coins.
-```sh
+#### 9. Make sure that you have enough funds in you wallets.
+- If you dont have funds. Claim some through faucet.
+
+######  [Kichain faucet](https://discord.gg/D3vvEeBpE5). 
+Under kichain testnet-challenge channel you will find faucet thread.
+
+######  [Croeseid faucet](https://crypto.org/faucet).
+
+#### 10. Check the wallet balance of the relayer.
+
+```
 rly q balance kichain-t-4
-253478494utki
+10000000utki
 ```
-```sh
+
+```
 rly q balance testnet-croeseid-4
-435653193basetcro
+100000000
 ```
-#### 10. Make sure that you have enough funds in you wallets.
-- If you dont have funds. Let's send some.
-
-Transfer to the relayer wallets 10 TKI and 10 TCRO(croeseid)
-
-KICHAIN-WALLET-NAME — this is the name of the key that was used to run the validator
-
-KICHAIN-RELAYER-ADDRESS -the croeseid relayer address. To get the address type the following command:
-
-```rly keys list kichain-t-4```
-
-```kid tx bank send KICHAIN-WALLET-NAME KICHAIN-RELAYER-ADDRESS 10000000utki --gas=auto --chain-id=kichain-t-4```
-
-CRO-WALLET-NAMEE — the corresponding key on the Croeseid
-
-CRO-RELAYER-ADDRESS -the croeseid relayer address. To get the address type the following command:
-
-```rly keys list testnet-croeseid-4```
-
-```$HOME/bin/chain-maind tx bank send CRO-WALLET-NAME CRO-RELAYER-ADDRESS 10000000basetcro```
-
-###### Notice. for croeseid [you can claim tcro through faucet](https://crypto.org/faucet).
-
-#### 11. Once again check that we have some coins on relayer addresses 
-```rly q balance kichain-t-4```
-
-```rly q balance testnet-croeseid-4```
 
 
-#### 12. When the tokens arrived, initialize clients for both networks:
+#### 11. Initialize clients for both networks:
 ```rly light init kichain-t-4 -f```
 
 ```rly light init testnet-croeseid-4 -f```
 
-#### 13. Create a channel between the two networks:
+#### 12. Create a channel between the two networks:
 - ###### rly paths generate [src-chain-id] [dst-chain-id] [name] [flags]
 
 ```rly paths generate kichain-t-4 testnet-croeseid-4 transfer --port=transfer```
 
-#### 14. Next step lets create channel from croeseid to kichain
+#### 13. Next step lets create channel from croeseid to kichain
 Note this command might take some time. If you have some errors try to repeat several times.
 Creating channel from croeseid to kichain
 
@@ -158,17 +140,32 @@ If operation completes successfull the otput of the last line should be like:
 
 ```★ Channel created: [kichain-t-4]chan{channel-45}port{transfer} -> [testnet-croeseid-4]chan{channel-18}port{transfer}```
 
-#### 15. Checking the path by typing: 
+#### 14. Checking the path by typing: 
 
 ```
 rly paths list -d
 0: transfer          -> chns(✔) clnts(✔) conn(✔) chan(✔) (kichain-t-4:transfer<>testnet-croeseid-4:transfer)
 ```
 
-#### 16. Start relayer as a service
+#### 15. Start relayer as a service
+In our service file we are using ```rly tx link-then-start transfer --timeout 30s``` command.
+First it will link our channel and then relayer will immediately started with timeout 30 seconds.
 
 ```
-sudo tee /etc/systemd/system/rlyd.service > /dev/null <<EOF [Unit] Description=relayer client After=network-online.target, chaind.service [Service] User=$USER ExecStart=$(which rly) start transfer Restart=always RestartSec=3 LimitNOFILE=65535 [Install] WantedBy=multi-user.target EOF
+sudo tee /etc/systemd/system/rlyd.service > /dev/null <<EOF
+[Unit]
+Description=relayer service
+After=network-online.target
+
+[Service]
+User=$USER
+ExecStart=$(which rly) tx link-then-start transfer --timeout 30s
+Restart=always
+RestartSec=3
+LimitNOFILE=65535
+[Install]
+WantedBy=multi-user.target
+EOF
 ```
 Start rlyd daemon
 ```
@@ -177,7 +174,7 @@ sudo systemctl enable rlyd
 sudo systemctl start rlyd
 ```
 
-#### 17. Send some coins
+#### 16. Send some coins
 
 From croeseid to kichain
 
