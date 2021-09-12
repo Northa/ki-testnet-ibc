@@ -116,7 +116,7 @@ rly q balance kichain-t-4
 
 ```
 rly q balance testnet-croeseid-4
-100000000
+100000000basetcro
 ```
 
 
