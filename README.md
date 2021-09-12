@@ -178,7 +178,7 @@ sudo systemctl start rlyd
 
 From croeseid to kichain
 
-```rly tx transfer testnet-croeseid-4 kichain-t-4 1000000basetcro tki1__YOUR_WALLET --path transfer```
+```rly tx transfer testnet-croeseid-4 kichain-t-4 1000000basetcro $(rly chains address kichain-t-4) --path transfer```
 
 The output should be:
 ###### ✔ [testnet-croeseid-4]@{289697} - msg(0:transfer) hash(1C1....your_hash....07)
@@ -186,7 +186,7 @@ The output should be:
 
 From kichain to croeseid
 
-```rly tx transfer kichain-t-4 testnet-croeseid-4 666000utki tcro__YOUR_WALLET --path transfer```
+```rly tx transfer kichain-t-4 testnet-croeseid-4 666000utki $(rly chains address testnet-croeseid-4) --path transfer```
 
 The output should be:
 ###### ✔ [kichain-t-4]@{221552} - msg(0:transfer) hash(E1....your_hash....6)
